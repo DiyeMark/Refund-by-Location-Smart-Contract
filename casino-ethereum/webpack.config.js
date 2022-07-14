@@ -7,7 +7,7 @@ module.exports = {
         filename: 'build.js' // The final file will be created in dist/build.js
     },
     module: {
-        rules: [{
+        loaders: [{
             test: /\.css$/, // To load the css in react
             use: ['style-loader', 'css-loader'],
             include: /src/
@@ -18,6 +18,9 @@ module.exports = {
             query: {
                 presets: ['es2015', 'react', 'stage-2']
             }
+        }, {
+            test: /\.json$/, // To load the json files
+            loader: 'json-loader'
         }]
     }
 }
