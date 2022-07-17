@@ -13,6 +13,8 @@ import {
 function App() {
     const [employeeAddress, setEmployeeAddress] = useState("");
     const [newRadius, setNewRadius] = useState("");
+    const [newLocation, setNewLocation] = useState({});
+
     const [employees, setEmployees] = useState([]);
     const [radius, setRadius] = useState("");
     const [location, setLocation] = useState({
@@ -131,9 +133,45 @@ function App() {
         setLocation({lat: loc.toString().split(',')[0], long: loc.toString().split(',')[1]});
     };
 
-    const setContractRadius = async () => {};
+    const setContractRadius = async () => {
+        const { ethereum } = window;
 
-    const setContractLocation = async () => {};
+        if (!ethereum) {
+            alert("Please install MetaMask!");
+            return;
+        }
+
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(
+            contractAddress,
+            RefundByLocation.abi,
+            signer
+        );
+
+        const setRadius = await contract.setRadius(newRadius);
+        await setRadius.wait();
+    };
+
+    const setContractLocation = async () => {
+        const { ethereum } = window;
+
+        if (!ethereum) {
+            alert("Please install MetaMask!");
+            return;
+        }
+
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(
+            contractAddress,
+            RefundByLocation.abi,
+            signer
+        );
+
+        const setRadius = await contract.setLocation(newLocation.lat, newLocation.long);
+        await setRadius.wait();
+    };
 
     useEffect(() => {
         connectWallet();
@@ -172,12 +210,14 @@ function App() {
                       width: '20%',
                   }}
                   placeholder={location.lat}
+                  onChange={(e) => setNewLocation({"lat": e.target.value})}
               />
               <Input
                   style={{
                       width: '30%',
                   }}
                   placeholder={location.long}
+                  onChange={(e) => setNewLocation({"long": e.target.value})}
               />
               <Button type="primary" onClick={setContractLocation}>Change Location</Button>
           </Input.Group>
