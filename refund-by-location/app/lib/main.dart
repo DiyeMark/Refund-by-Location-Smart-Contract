@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart';
+import 'package:web3dart/web3dart.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,6 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: MyHomePage(),
     );
   }
@@ -32,9 +36,22 @@ class _MyHomePageState extends State<MyHomePage> {
   String long = "", lat = "";
   late StreamSubscription<Position> positionStream;
 
+  late Client httpClient;
+
+  late Web3Client ethClient;
+
+  //Ethereum address
+  final String myAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+
+  //url from Infura
+  final String blockchainUrl =
+      "https://rinkeby.infura.io/v3/8014b5129eb945eba4b0efd04c78650e";
+
   @override
   void initState() {
     checkGps();
+    httpClient = Client();
+    ethClient = Web3Client(blockchainUrl, httpClient);
     super.initState();
   }
 
@@ -106,8 +123,33 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<DeployedContract> getContract() async {
+    String abiFile = await rootBundle
+        .loadString("contracts/build/contracts/RefundByLocation.json");
+    String contractAddress = "";
+    final contract = DeployedContract(
+        ContractAbi.fromJson(abiFile, "RefundByLocation"),
+        EthereumAddress.fromHex(contractAddress));
+
+    return contract;
+  }
+
+  Future<List<dynamic>> callFunction(String name, List params) async {
+    final contract = await getContract();
+    final function = contract.function(name);
+    final result = await ethClient.call(
+        contract: contract, function: function, params: params);
+    return result;
+  }
+
+  Future<void> reportLocation() async {
+    await callFunction(
+        'reportLocation', [lat, long, DateTime.now().millisecondsSinceEpoch]);
+  }
+
   @override
   Widget build(BuildContext context) {
+    Timer.periodic(const Duration(hours: 1), (Timer t) => reportLocation());
     return Scaffold(
         appBar: AppBar(
             title: const Text("Get GPS Location"),

@@ -1,12 +1,15 @@
 pragma solidity ^0.8.0;
 
+
 contract RefundByLocation {
+    //    enum StateType { Created, Completed, OutOfCompliance }
 
     struct Coordinate {
         uint256 lat;
         uint256 long;
     }
 
+    //    StateType public State;
     address public Owner;
     uint256 public Radius;
     Coordinate public OfficeLocation;
@@ -20,12 +23,27 @@ contract RefundByLocation {
 
     mapping (address => EmployeeLocationInfo) EmployeeLocationInfos;
 
+    // function() public payable {}
 
     constructor(address owner,uint256 officeLocationLat, uint256 officeLocationLong ,uint256 radius, uint payPerHour) public payable {
         Owner = owner;
         OfficeLocation = Coordinate({lat: officeLocationLat, long: officeLocationLong });
         Radius = radius;
         PayPerHour = payPerHour;
+    }
+
+    function getValue() public payable returns(uint) {
+        return msg.value;
+    }
+
+    function setRadius(uint256 radius) public {
+        require(msg.sender == Owner, "Must be owner");
+        Radius = radius;
+    }
+
+    function setLocation(Coordinate memory coordinate) public {
+        require(msg.sender == Owner, "Must be owner");
+        OfficeLocation = Coordinate({lat: coordinate.lat, long: coordinate.long });
     }
 
     function getEmployee() view public returns (address[] memory) {
@@ -44,15 +62,10 @@ contract RefundByLocation {
         return false;
     }
 
-    function getEmployeeLocationInfo(address employeeAdd, uint256 timeStamp) public view {
-
+    function getEmployeeLocationInfo (address employeeAdd, uint256 timeStamp) public view returns(uint256, uint256)  {
+        require(msg.sender == Owner, "Must be owner");
         EmployeeLocationInfo storage employeeLocation = EmployeeLocationInfos[employeeAdd];
-
-        //        console.log("over here lat", employeeLocation.LocationAtTimeStamp[timeStamp].lat);
-
-        //        console.log("over here long", employeeLocation.LocationAtTimeStamp[timeStamp].long);
-
-        // return employeeLocation[timeStamp];
+        return (employeeLocation.LocationAtTimeStamp[timeStamp].lat, employeeLocation.LocationAtTimeStamp[timeStamp].long);
     }
 
     function sqrt(uint x) pure public returns (uint y) {
